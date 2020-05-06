@@ -1390,7 +1390,7 @@ const fs                  = __webpack_require__(747);
 const core                = __webpack_require__(694);
 const ctx = __webpack_require__(30);
 
-const commits = ctx.context.payload.commits.filter(c => c.distinct);
+const commits = ctx.context.payload.commits;//.filter(c => c.distinct);
 const repo    = ctx.context.payload.repository;
 const org     = repo.organization;
 const owner   = org || repo.owner;

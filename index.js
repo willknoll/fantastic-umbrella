@@ -4,7 +4,7 @@ const fs                  = require('fs');
 const core                = require('@actions/core');
 const ctx = require('@actions/github');
 
-const commits = ctx.context.payload.commits.filter(c => c.distinct);
+const commits = ctx.context.payload.commits;//.filter(c => c.distinct);
 const repo    = ctx.context.payload.repository;
 const org     = repo.organization;
 const owner   = org || repo.owner;
