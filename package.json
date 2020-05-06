@@ -1,6 +1,6 @@
 {
   "name": "fantastic-umbrella",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Javascript file inspection Action",
   "main": "dist/index.js",
   "scripts": {
@@ -20,5 +20,8 @@
   "dependencies": {
     "@actions/core": "^1.2.4",
     "@actions/github": "^2.1.1"
+  },
+  "devDependencies": {
+    "@zeit/ncc": "^0.21.0"
   }
 }

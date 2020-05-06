@@ -50,7 +50,7 @@ function isRenamed(file) {
 
 async function processCommit(commit) {
 	args.ref = commit.id;
-	result   = await github.repos.getCommit(args);
+	result   = await gh.repos.getCommit(args);
 
 	if (result && result.data) {
 		const files = result.data.files;
