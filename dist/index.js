@@ -1384,8 +1384,16 @@ function checkMode (stat, options) {
 /***/ 75:
 /***/ (function(__unusedmodule, __unusedexports, __webpack_require__) {
 
-const core = __webpack_require__(694);
+// External Dependencies
+const fs                  = __webpack_require__(747);
+const { context, GitHub } = __webpack_require__(30);
+const core                = __webpack_require__(694);
 const github = __webpack_require__(30);
+
+const commits = context.payload.commits.filter(c => c.distinct);
+const repo    = context.payload.repository;
+const org     = repo.organization;
+const owner   = org || repo.owner;
 
 try {
 
@@ -1400,6 +1408,69 @@ try {
 } catch (error) {
   core.setFailed(error.message);
 }
+
+const FILES          = [];
+const FILES_MODIFIED = [];
+const FILES_ADDED    = [];
+const FILES_DELETED  = [];
+const FILES_RENAMED  = [];
+
+const gh   = new GitHub(core.getInput('token'));
+const args = { owner: owner.name, repo: repo.name };
+
+function isAdded(file) {
+	return 'added' === file.status;
+}
+
+function isDeleted(file) {
+	return 'deleted' === file.status;
+}
+
+function isModified(file) {
+	return 'modified' === file.status;
+}
+
+function isRenamed(file) {
+	return 'renamed' === file.status;
+}
+
+async function processCommit(commit) {
+	args.ref = commit.id;
+	result   = await github.repos.getCommit(args);
+
+	if (result && result.data) {
+		const files = result.data.files;
+
+		files.forEach( file => {
+			isModified(file) && FILES.push(file.filename);
+			isAdded(file) && FILES.push(file.filename);
+			isRenamed(file) && FILES.push(file.filename);
+
+			isModified(file) && FILES_MODIFIED.push(file.filename);
+			isAdded(file) && FILES_ADDED.push(file.filename);
+			isDeleted(file) && FILES_DELETED.push(file.filename);
+			isRenamed(file) && FILES_RENAMED.push(file.filename);
+		});
+	}
+}
+
+
+Promise.all(commits.map(processCommit)).then(() => {
+	process.stdout.write(`::debug::${JSON.stringify(FILES, 4)}`);
+	process.stdout.write(`::set-output name=files-all::${JSON.stringify(FILES, 4)}`);
+	process.stdout.write(`::set-output name=files-added::${JSON.stringify(FILES_ADDED, 4)}`);
+	process.stdout.write(`::set-output name=files-deleted::${JSON.stringify(FILES_DELETED, 4)}`);
+	process.stdout.write(`::set-output name=files-modified::${JSON.stringify(FILES_MODIFIED, 4)}`);
+	process.stdout.write(`::set-output name=files-renamed::${JSON.stringify(FILES_RENAMED, 4)}`);
+
+	fs.writeFileSync(`${process.env.HOME}/files.json`, JSON.stringify(FILES), 'utf-8');
+	fs.writeFileSync(`${process.env.HOME}/files_modified.json`, JSON.stringify(FILES_MODIFIED), 'utf-8');
+	fs.writeFileSync(`${process.env.HOME}/files_added.json`, JSON.stringify(FILES_ADDED), 'utf-8');
+	fs.writeFileSync(`${process.env.HOME}/files_deleted.json`, JSON.stringify(FILES_DELETED), 'utf-8');
+	fs.writeFileSync(`${process.env.HOME}/files_renamed.json`, JSON.stringify(FILES_RENAMED), 'utf-8');
+
+	process.exit(0);
+});
 
 /***/ }),
 
@@ -6212,7 +6283,7 @@ var Stream = _interopDefault(__webpack_require__(413));
 var http = _interopDefault(__webpack_require__(605));
 var Url = _interopDefault(__webpack_require__(835));
 var https = _interopDefault(__webpack_require__(211));
-var zlib = _interopDefault(__webpack_require__(903));
+var zlib = _interopDefault(__webpack_require__(761));
 
 // Based on https://github.com/tmpvar/jsdom/blob/aa85b2abf07766ff7bf5c1f6daafb3726f2f2db5/lib/jsdom/living/blob.js
 
@@ -23265,7 +23336,7 @@ var __importStar = (this && this.__importStar) || function (mod) {
     return result;
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-const command_1 = __webpack_require__(761);
+const command_1 = __webpack_require__(707);
 const os = __importStar(__webpack_require__(87));
 const path = __importStar(__webpack_require__(622));
 /**
@@ -23522,6 +23593,105 @@ function addHook (state, kind, name, hook) {
   })
 }
 
+
+/***/ }),
+
+/***/ 707:
+/***/ (function(__unusedmodule, exports, __webpack_require__) {
+
+"use strict";
+
+var __importStar = (this && this.__importStar) || function (mod) {
+    if (mod && mod.__esModule) return mod;
+    var result = {};
+    if (mod != null) for (var k in mod) if (Object.hasOwnProperty.call(mod, k)) result[k] = mod[k];
+    result["default"] = mod;
+    return result;
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+const os = __importStar(__webpack_require__(87));
+/**
+ * Commands
+ *
+ * Command Format:
+ *   ::name key=value,key=value::message
+ *
+ * Examples:
+ *   ::warning::This is the message
+ *   ::set-env name=MY_VAR::some value
+ */
+function issueCommand(command, properties, message) {
+    const cmd = new Command(command, properties, message);
+    process.stdout.write(cmd.toString() + os.EOL);
+}
+exports.issueCommand = issueCommand;
+function issue(name, message = '') {
+    issueCommand(name, {}, message);
+}
+exports.issue = issue;
+const CMD_STRING = '::';
+class Command {
+    constructor(command, properties, message) {
+        if (!command) {
+            command = 'missing.command';
+        }
+        this.command = command;
+        this.properties = properties;
+        this.message = message;
+    }
+    toString() {
+        let cmdStr = CMD_STRING + this.command;
+        if (this.properties && Object.keys(this.properties).length > 0) {
+            cmdStr += ' ';
+            let first = true;
+            for (const key in this.properties) {
+                if (this.properties.hasOwnProperty(key)) {
+                    const val = this.properties[key];
+                    if (val) {
+                        if (first) {
+                            first = false;
+                        }
+                        else {
+                            cmdStr += ',';
+                        }
+                        cmdStr += `${key}=${escapeProperty(val)}`;
+                    }
+                }
+            }
+        }
+        cmdStr += `${CMD_STRING}${escapeData(this.message)}`;
+        return cmdStr;
+    }
+}
+/**
+ * Sanitizes an input into a string so it can be passed into issueCommand safely
+ * @param input input to sanitize into a string
+ */
+function toCommandValue(input) {
+    if (input === null || input === undefined) {
+        return '';
+    }
+    else if (typeof input === 'string' || input instanceof String) {
+        return input;
+    }
+    return JSON.stringify(input);
+}
+exports.toCommandValue = toCommandValue;
+function escapeData(s) {
+    return toCommandValue(s)
+        .replace(/%/g, '%25')
+        .replace(/\r/g, '%0D')
+        .replace(/\n/g, '%0A');
+}
+function escapeProperty(s) {
+    return toCommandValue(s)
+        .replace(/%/g, '%25')
+        .replace(/\r/g, '%0D')
+        .replace(/\n/g, '%0A')
+        .replace(/:/g, '%3A')
+        .replace(/,/g, '%2C');
+}
+//# sourceMappingURL=command.js.map
 
 /***/ }),
 
@@ -23797,101 +23967,9 @@ module.exports = function (x) {
 /***/ }),
 
 /***/ 761:
-/***/ (function(__unusedmodule, exports, __webpack_require__) {
+/***/ (function(module) {
 
-"use strict";
-
-var __importStar = (this && this.__importStar) || function (mod) {
-    if (mod && mod.__esModule) return mod;
-    var result = {};
-    if (mod != null) for (var k in mod) if (Object.hasOwnProperty.call(mod, k)) result[k] = mod[k];
-    result["default"] = mod;
-    return result;
-};
-Object.defineProperty(exports, "__esModule", { value: true });
-const os = __importStar(__webpack_require__(87));
-/**
- * Commands
- *
- * Command Format:
- *   ::name key=value,key=value::message
- *
- * Examples:
- *   ::warning::This is the message
- *   ::set-env name=MY_VAR::some value
- */
-function issueCommand(command, properties, message) {
-    const cmd = new Command(command, properties, message);
-    process.stdout.write(cmd.toString() + os.EOL);
-}
-exports.issueCommand = issueCommand;
-function issue(name, message = '') {
-    issueCommand(name, {}, message);
-}
-exports.issue = issue;
-const CMD_STRING = '::';
-class Command {
-    constructor(command, properties, message) {
-        if (!command) {
-            command = 'missing.command';
-        }
-        this.command = command;
-        this.properties = properties;
-        this.message = message;
-    }
-    toString() {
-        let cmdStr = CMD_STRING + this.command;
-        if (this.properties && Object.keys(this.properties).length > 0) {
-            cmdStr += ' ';
-            let first = true;
-            for (const key in this.properties) {
-                if (this.properties.hasOwnProperty(key)) {
-                    const val = this.properties[key];
-                    if (val) {
-                        if (first) {
-                            first = false;
-                        }
-                        else {
-                            cmdStr += ',';
-                        }
-                        cmdStr += `${key}=${escapeProperty(val)}`;
-                    }
-                }
-            }
-        }
-        cmdStr += `${CMD_STRING}${escapeData(this.message)}`;
-        return cmdStr;
-    }
-}
-/**
- * Sanitizes an input into a string so it can be passed into issueCommand safely
- * @param input input to sanitize into a string
- */
-function toCommandValue(input) {
-    if (input === null || input === undefined) {
-        return '';
-    }
-    else if (typeof input === 'string' || input instanceof String) {
-        return input;
-    }
-    return JSON.stringify(input);
-}
-exports.toCommandValue = toCommandValue;
-function escapeData(s) {
-    return toCommandValue(s)
-        .replace(/%/g, '%25')
-        .replace(/\r/g, '%0D')
-        .replace(/\n/g, '%0A');
-}
-function escapeProperty(s) {
-    return toCommandValue(s)
-        .replace(/%/g, '%25')
-        .replace(/\r/g, '%0D')
-        .replace(/\n/g, '%0A')
-        .replace(/:/g, '%3A')
-        .replace(/,/g, '%2C');
-}
-//# sourceMappingURL=command.js.map
+module.exports = require("zlib");
 
 /***/ }),
 
@@ -25011,13 +25089,6 @@ function parseOptions(options, log, hook) {
   return clientDefaults;
 }
 
-
-/***/ }),
-
-/***/ 903:
-/***/ (function(module) {
-
-module.exports = require("zlib");
 
 /***/ }),
 

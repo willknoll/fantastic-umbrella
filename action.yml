@@ -1,5 +1,8 @@
-name: 'Hello World'
-description: 'Greet someone and record the time'
+name: 'Get files'
+description: 'Saves lists of changed files'
+runs:
+  using: 'node12'
+  main: 'dist/index.js'
 inputs:
   who-to-greet:  # id of input
     description: 'Who to greet'
@@ -8,6 +11,14 @@ inputs:
 outputs:
   time: # id of output
     description: 'The time we greeted you'
-runs:
-  using: 'node12'
-  main: 'dist/index.js'
+  files-all:
+    description: Array of all changed files (JSON string)
+  files-added:
+    description: Array of added files (JSON string)
+  files-deleted:
+    description: Array of deleted files (JSON string)
+  files-modified:
+    description: Array of modified files (JSON string)
+branding:
+  icon:  'search'
+  color: 'gray-dark'
