@@ -30,7 +30,7 @@ const FILES_ADDED    = [];
 const FILES_DELETED  = [];
 const FILES_RENAMED  = [];
 
-const gh   = new GitHub(core.getInput('token'));
+const gh   = new ctx(core.getInput('token'));
 const args = { owner: owner.name, repo: repo.name };
 
 function isAdded(file) {
