@@ -2,12 +2,15 @@
 const fs                  = require('fs');
 //const { context, GitHub } = require('@actions/github');
 const core                = require('@actions/core');
-const ctx = require('@actions/github');
+//const ctx = require('@actions/github');
+const gh = require('@actions/github');
+const {Octokit} = require("@octokit/action");
 
-const commits = ctx.context.payload.commits;//.filter(c => c.distinct);
-const repo    = ctx.context.payload.repository;
-const org     = repo.organization;
-const owner   = org || repo.owner;
+
+//const commits = ctx.context.payload.commits;//.filter(c => c.distinct);
+//const repo    = ctx.context.payload.repository;
+//const org     = repo.organization;
+//const owner   = org || repo.owner;
 
 try {
 
@@ -24,7 +27,23 @@ try {
   core.setFailed(error.message);
 }
 
-const FILES          = [];
+async function doIt() {
+  const octokit = new Octokit();
+  const [owner, repo] = process.env.GITHUB_REPOSITORY.split("/");
+    const {number} = gh.context.payload;
+  const pull_number = number;
+    console.log(`Getting commits for pull_number: ${pull_number}`);
+  //console.log(`Searching for: ${paths}`);
+
+  const files = await octokit.pulls.listFiles({owner, repo, pull_number});
+  
+  //files.forEach( file => {
+	//  console.log(`${file.filename}`);
+  //}
+}
+doIt();
+
+/* const FILES          = [];
 const FILES_MODIFIED = [];
 const FILES_ADDED    = [];
 const FILES_DELETED  = [];
@@ -85,4 +104,4 @@ Promise.all(commits.map(processCommit)).then(() => {
 	fs.writeFileSync(`${process.env.HOME}/files_renamed.json`, JSON.stringify(FILES_RENAMED), 'utf-8');
 
 	process.exit(0);
-});
+}); */
