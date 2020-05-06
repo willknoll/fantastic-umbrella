@@ -1,11 +1,11 @@
 // External Dependencies
 const fs                  = require('fs');
-const { context, GitHub } = require('@actions/github');
+//const { context, GitHub } = require('@actions/github');
 const core                = require('@actions/core');
-//const github = require('@actions/github');
+const ctx = require('@actions/github');
 
-const commits = context.payload.commits.filter(c => c.distinct);
-const repo    = context.payload.repository;
+const commits = ctx.context.payload.commits.filter(c => c.distinct);
+const repo    = ctx.context.payload.repository;
 const org     = repo.organization;
 const owner   = org || repo.owner;
 
@@ -18,7 +18,7 @@ try {
   core.setOutput("time", time);
   // Get the JSON webhook payload for the event that triggered the workflow
   //const payload = JSON.stringify(github.context.payload, undefined, 2)
-  const payload = JSON.stringify(context.payload, undefined, 2)
+  const payload = JSON.stringify(ctx.context.payload, undefined, 2)
   console.log(`The event payload: ${payload}`);
 } catch (error) {
   core.setFailed(error.message);
