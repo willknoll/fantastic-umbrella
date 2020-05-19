@@ -4,11 +4,9 @@ import * as yaml from 'js-yaml';
 import {Minimatch} from 'minimatch';
 
 async function run() {
-
-    core.debug(`Starting file check run`);
+  try {
     core.info(`Starting file check run`);
 
-  try {
     const token = core.getInput('repo-token', {required: true});
     const configPath = core.getInput('configuration-path', {required: true});
 
@@ -20,7 +18,7 @@ async function run() {
 
     const client = new github.GitHub(token);
 
-    core.debug(`fetching changed files for pr #${prNumber}`);
+    core.info(`fetching changed files for pr #${prNumber}`);
     const changedFiles: string[] = await getChangedFiles(client, prNumber);
    /*
     const labelGlobs: Map<string, string[]> = await getLabelGlobs(
@@ -67,9 +65,9 @@ async function getChangedFiles(
 
   const changedFiles = listFilesResponse.data.map(f => f.filename);
 
-  core.debug('found changed files:');
+  core.info('found changed files:');
   for (const file of changedFiles) {
-    core.debug('  ' + file);
+    core.info('  ' + file);
   }
 
   return changedFiles;

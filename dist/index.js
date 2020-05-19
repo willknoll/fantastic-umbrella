@@ -30211,9 +30211,8 @@ const yaml = __importStar(__webpack_require__(660));
 const minimatch_1 = __webpack_require__(326);
 function run() {
     return __awaiter(this, void 0, void 0, function* () {
-        core.debug(`Starting file check run`);
-        core.info(`Starting file check run`);
         try {
+            core.info(`Starting file check run`);
             const token = core.getInput('repo-token', { required: true });
             const configPath = core.getInput('configuration-path', { required: true });
             const prNumber = getPrNumber();
@@ -30222,7 +30221,7 @@ function run() {
                 return;
             }
             const client = new github.GitHub(token);
-            core.debug(`fetching changed files for pr #${prNumber}`);
+            core.info(`fetching changed files for pr #${prNumber}`);
             const changedFiles = yield getChangedFiles(client, prNumber);
             /*
              const labelGlobs: Map<string, string[]> = await getLabelGlobs(
@@ -30264,9 +30263,9 @@ function getChangedFiles(client, prNumber) {
             pull_number: prNumber
         });
         const changedFiles = listFilesResponse.data.map(f => f.filename);
-        core.debug('found changed files:');
+        core.info('found changed files:');
         for (const file of changedFiles) {
-            core.debug('  ' + file);
+            core.info('  ' + file);
         }
         return changedFiles;
     });
