@@ -30211,6 +30211,8 @@ const yaml = __importStar(__webpack_require__(660));
 const minimatch_1 = __webpack_require__(326);
 function run() {
     return __awaiter(this, void 0, void 0, function* () {
+        core.debug(`Starting file check run`);
+        core.info(`Starting file check run`);
         try {
             const token = core.getInput('repo-token', { required: true });
             const configPath = core.getInput('configuration-path', { required: true });

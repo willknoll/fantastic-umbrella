@@ -4,6 +4,10 @@ import * as yaml from 'js-yaml';
 import {Minimatch} from 'minimatch';
 
 async function run() {
+
+    core.debug(`Starting file check run`);
+    core.info(`Starting file check run`);
+
   try {
     const token = core.getInput('repo-token', {required: true});
     const configPath = core.getInput('configuration-path', {required: true});
