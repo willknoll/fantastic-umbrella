@@ -4,6 +4,13 @@ runs:
   using: 'node12'
   main: 'dist/index.js'
 inputs:
+  repo-token:
+    description: 'The GITHUB_TOKEN secret'
+    required: true
+  configuration-path:
+    description: 'The path for the label configurations'
+    required: true
+    default: '.github/labeler.yml'
   who-to-greet:  # id of input
     description: 'Who to greet'
     required: true
