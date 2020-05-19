@@ -30257,10 +30257,12 @@ function getPrNumber() {
 }
 function getChangedFiles(client, prNumber) {
     return __awaiter(this, void 0, void 0, function* () {
-        const listFilesResponse = yield client.pulls.listFiles({
+        const clientListFiles = client.pulls.listFiles;
+        const listFilesResponse = yield clientListFiles({
             owner: github.context.repo.owner,
             repo: github.context.repo.repo,
-            pull_number: prNumber
+            pull_number: prNumber,
+            per_page: 3000
         });
         const changedFiles = listFilesResponse.data.map(f => f.filename);
         core.info('found changed files:');
