@@ -30285,14 +30285,14 @@ function validateFile(file) {
     if (!fileNameExceptions.includes(filename)) {
         if (!regexFileName.test(filename)) {
             core.warning(file);
-            core.error('Invalid file name: ' + filename);
+            //core.error('Invalid file name: ' + filename);
             core.error('File names must be all lowercase and cannot contain spaces or special characters.');
             isError = true;
         }
     }
     if (!allowedExtensions.includes(extension)) {
-        core.warning(filename);
-        core.error('Invalid file extension: ' + filename);
+        core.warning(file);
+        //core.error('Invalid file extension: ' + filename);
         core.error(`'${extension}' files are not allowed.`);
         isError = true;
     }
