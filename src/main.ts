@@ -7,6 +7,43 @@ const fileNameRegex = "^[a-z\-\d]+.{1}[a-z]{1,4}$";
 const regexFileName = new RegExp(fileNameRegex);
 const allowedExtensions = ['md', 'yml', 'jpg', 'png'];
 const fileNameExceptions = ['README.md'];
+const existingDirs = [
+    '.git',
+    '.github',
+    'breadcrumb',
+    'collateral',
+    'contribute',
+    'customer-health-data-quality-guide',
+    'fasttrack-compliance-deployment-guide',
+    'fasttrack-reporting-power-bi-access-guide',
+    'ftc-help-guide',
+    'ftc-insights',
+    'ftc-resource-request-approver-user-guide',
+    'ftc-resource-request-requester-user-guide',
+    'ftc-survey-process-for-fy20',
+    'ftcsme-bot-user-guide',
+    'ftop-user-guide',
+    'help-guides',
+    'hr-connector-setup',
+    'identity-and-device-security-guidance',
+    'includes',
+    'media',
+    'mvm-reqtask-instructions',
+    'obj',
+    'onboarding-readiness',
+    'partner-site',
+    'partner-site-prelim',
+    'pdf',
+    'playbook',
+    'playbook-prelim',
+    'references',
+    'release-readiness',
+    'resources',
+    'role-guide',
+    'sfbo-to-teams-transition-roles-and-responsibilities',
+    'useful-urls',
+    'working-with-the-field'
+];
 var isError = false;
 
 async function run() {
@@ -30,7 +67,15 @@ async function run() {
     core.info(`Using file name regex: ${fileNameRegex}`);
     core.info(`Allowed file extensions: ${allowedExtensions}`);
     core.info(`File name exceptions: ${fileNameExceptions}`);
+    core.info(`Existing directories: ${existingDirs}`);
 
+    console.log("Inspecting directories...");
+    for (const file of changedFiles)
+    {
+        validateDirectory(file);
+    }
+
+    console.log("Validating files...");
     for (const file of changedFiles) {
         validateFile(file);
     }
@@ -71,6 +116,22 @@ function getPrNumber(): number | undefined {
   }
 
   return pullRequest.number;
+}
+
+function validateDirectory(file: string){
+    let slash = file.indexOf('/');
+
+    if (slash <= 0) {
+        core.warning(file);
+        core.error('Root level file changes must be approved.');
+    } else {
+        let dir = file.substring(0, slash - 1);
+        if (!existingDirs.includes(dir))
+        {
+            core.warning(file);
+            core.error(`New root level directory '${dir}' must be approved`);
+        }
+    }
 }
 
 function validateFile(file: string) {
