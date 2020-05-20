@@ -30235,6 +30235,7 @@ function run() {
                 if (slash >= 0) {
                     filename = file.substring(slash + 1);
                 }
+                core.info(`Checkign file: ${filename}`);
                 if (!regexFileName.test(filename)) {
                     core.error('Invalid file name: ' + file);
                     core.setFailed('One or more invalid file names found.');

@@ -37,6 +37,7 @@ async function run() {
         {
             filename = file.substring(slash + 1);
         }
+        core.info(`Checkign file: ${filename}`);
         if (!regexFileName.test(filename))
         {
             core.error('Invalid file name: ' + file);
