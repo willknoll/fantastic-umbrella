@@ -30225,11 +30225,13 @@ function run() {
             const client = new github.GitHub(token);
             core.info(`fetching changed files for pr #${prNumber}`);
             const changedFiles = yield getChangedFiles(client, prNumber);
+            core.info(`File name regex: ${fileNameRegex}`);
+            core.info(`File extension regex: ${fileExtRegex}`);
             let regexFileName = new RegExp(fileNameRegex);
             let regexFileExt = new RegExp(fileExtRegex);
             for (const file of changedFiles) {
                 if (!regexFileName.test(file)) {
-                    core.error('Invalid file name:' + file);
+                    core.error('Invalid file name: ' + file);
                     core.setFailed('One or more invalid file names found.');
                 }
                 if (!regexFileExt.test(file)) {
