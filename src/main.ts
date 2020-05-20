@@ -27,7 +27,7 @@ async function run() {
     core.info(`File extension regex: ${fileExtRegex}`)
 
     let regexFileName = new RegExp("[a-z\d/\\-]+\.{1}[a-z]{1,4}");
-    let regexFileExt = new RegExp(fileExtRegex);
+    let regexFileExt = new RegExp("(?!\.{1})(?:md|yml|jpg|png)");
 
     for (const file of changedFiles) {
         let isError = false;
