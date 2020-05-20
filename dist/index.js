@@ -30215,8 +30215,11 @@ function run() {
             core.info(`Starting file check run`);
             const token = core.getInput('repo-token', { required: true });
             const configPath = core.getInput('configuration-path', { required: true });
-            const fileNameRegex = core.getInput('filename-regex', { required: true });
+            const fileNameRegex = "^[a-z\d/\\-]+\.{1}[a-z]{1,4}"; //core.getInput('filename-regex', {required: true});
             const fileExtRegex = core.getInput('fileext-regex', { required: true });
+            const regexFileName = new RegExp("^[a-z\d/\\-]+\.{1}[a-z]{1,4}");
+            //let regexFileExt = new RegExp("(?!\.{1})md|yml|jpg|png");
+            const allowedExtensions = ['md', 'yml', 'jpg', 'png'];
             const prNumber = getPrNumber();
             if (!prNumber) {
                 console.log('Could not get pull request number from context, exiting');
@@ -30225,29 +30228,34 @@ function run() {
             const client = new github.GitHub(token);
             core.info(`fetching changed files for pr #${prNumber}`);
             const changedFiles = yield getChangedFiles(client, prNumber);
-            //core.info(`File name regex: ${fileNameRegex}`)
+            core.info(`File name regex: ${fileNameRegex}`);
+            core.info(`Allowed file extensions: ${allowedExtensions}`);
             //core.info(`File extension regex: ${fileExtRegex}`)
-            let regexFileName = new RegExp("^[a-z\d/\\-]+\.{1}[a-z]{1,4}");
-            let regexFileExt = new RegExp("(?!\.{1})md|yml|jpg|png");
             let isError = false;
             for (const file of changedFiles) {
                 let slash = file.lastIndexOf('/');
+                let dot = file.lastIndexOf('.');
                 let filename = file;
+                let extension = '';
                 if (slash >= 0) {
                     filename = file.substring(slash + 1);
                 }
+                if (dot >= 0) {
+                    extension = file.substring(dot++);
+                }
                 core.info(`Checking file: ${filename}`);
+                core.info(`Checking extension: ${extension}`);
                 if (!regexFileName.test(filename)) {
                     core.error('Invalid file name: ' + file);
                     isError = true;
                 }
-                if (!regexFileExt.test(filename)) {
-                    core.error('Invalid file extension: ' + file);
+                if (!allowedExtensions.includes(extension)) {
+                    core.error('Invalid file extension: ' + extension);
                     isError = true;
                 }
             }
             if (isError) {
-                core.setFailed("One or more file errors was found.");
+                core.setFailed("Found one or more file errors.");
             }
             /*
              const labelGlobs: Map<string, string[]> = await getLabelGlobs(
