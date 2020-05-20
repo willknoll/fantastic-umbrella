@@ -7,6 +7,12 @@ inputs:
   repo-token:
     description: 'The GITHUB_TOKEN secret'
     required: true
+  filename-regex:
+    description: 'The regex to use to check file names'
+    required: true
+  fileext-regex:
+    description: 'The regex to use to check valid file extensions'
+    required: true
   configuration-path:
     description: 'The path for the label configurations'
     required: true

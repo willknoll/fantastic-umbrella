@@ -9,6 +9,8 @@ async function run() {
 
     const token = core.getInput('repo-token', {required: true});
     const configPath = core.getInput('configuration-path', {required: true});
+    const fileNameRegex = core.getInput('filename-regex', {required: true});
+    const fileExtRegex = core.getInput('fileext-regex', {required: true})
 
     const prNumber = getPrNumber();
     if (!prNumber) {
@@ -20,6 +22,22 @@ async function run() {
 
     core.info(`fetching changed files for pr #${prNumber}`);
     const changedFiles: string[] = await getChangedFiles(client, prNumber);
+
+    let regexFileName = new RegExp(fileNameRegex);
+    let regexFileExt = new RegExp(fileExtRegex);
+
+    for (const file of changedFiles) {
+        if (!regexFileName.test(file))
+        {
+            core.error('Invalid file name:' + file);
+            core.setFailed('One or more invalid file names found.');
+        }
+        if (!regexFileExt.test(file))
+        {
+            core.error('Invalid file extension:' + file);
+            core.setFailed('One or more invalid file types found.');
+        }
+      }
    /*
     const labelGlobs: Map<string, string[]> = await getLabelGlobs(
       client,
@@ -62,7 +80,7 @@ async function getChangedFiles(
       owner: github.context.repo.owner,
       repo: github.context.repo.repo,
       pull_number: prNumber,
-      per_page: 3000
+      per_page: 100 // 100 is the max we can request at a time
     });
 
   const changedFiles = listFilesResponse.data.map(f => f.filename);
