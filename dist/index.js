@@ -30228,7 +30228,7 @@ function run() {
             //core.info(`File name regex: ${fileNameRegex}`)
             //core.info(`File extension regex: ${fileExtRegex}`)
             let regexFileName = new RegExp("^[a-z\d/\\-]+\.{1}[a-z]{1,4}");
-            let regexFileExt = new RegExp("(?!\.{1})(md|yml|jpg|png)");
+            let regexFileExt = new RegExp("(?!\.{1})md|yml|jpg|png");
             let isError = false;
             for (const file of changedFiles) {
                 let slash = file.lastIndexOf('/');

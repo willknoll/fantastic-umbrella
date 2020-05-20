@@ -27,7 +27,7 @@ async function run() {
     //core.info(`File extension regex: ${fileExtRegex}`)
 
     let regexFileName = new RegExp("^[a-z\d/\\-]+\.{1}[a-z]{1,4}");
-    let regexFileExt = new RegExp("(?!\.{1})(md|yml|jpg|png)");
+    let regexFileExt = new RegExp("(?!\.{1})md|yml|jpg|png");
     let isError = false;
     for (const file of changedFiles) {
         let slash = file.lastIndexOf('/');
@@ -49,6 +49,7 @@ async function run() {
             isError = true;
         }
       }
+
       if (isError)
       {
           core.setFailed("One or more file errors was found.");
