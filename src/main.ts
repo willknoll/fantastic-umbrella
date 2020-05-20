@@ -26,7 +26,7 @@ async function run() {
     //core.info(`File name regex: ${fileNameRegex}`)
     //core.info(`File extension regex: ${fileExtRegex}`)
 
-    let regexFileName = new RegExp("[a-z\d/\\-]+\.{1}[a-z]{1,4}");
+    let regexFileName = new RegExp("^[a-z\d/\\-]+\.{1}[a-z]{1,4}");
     let regexFileExt = new RegExp("(?!\.{1})(md|yml|jpg|png)");
     let isError = false;
     for (const file of changedFiles) {
@@ -37,7 +37,7 @@ async function run() {
         {
             filename = file.substring(slash + 1);
         }
-        core.info(`Checkign file: ${filename}`);
+        core.info(`Checking file: ${filename}`);
         if (!regexFileName.test(filename))
         {
             core.error('Invalid file name: ' + file);
@@ -45,7 +45,7 @@ async function run() {
         }
         if (!regexFileExt.test(filename))
         {
-            core.error('Invalid file extension:' + file);
+            core.error('Invalid file extension: ' + file);
             isError = true;
         }
       }
