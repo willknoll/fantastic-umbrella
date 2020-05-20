@@ -30243,14 +30243,16 @@ function run() {
                 if (dot >= 0) {
                     extension = file.substring(dot + 1);
                 }
-                core.info(`Checking file: ${filename}`);
-                core.info(`Checking extension: ${extension}`);
+                core.debug(`Checking file: ${filename}`);
+                core.debug(`Checking extension: ${extension}`);
                 if (!regexFileName.test(filename)) {
+                    core.info(file);
                     core.error('Invalid file name: ' + filename);
                     core.warning('File names must be all lowercase and cannot contain spaces or special characters.');
                     isError = true;
                 }
                 if (!allowedExtensions.includes(extension)) {
+                    core.info(filename);
                     core.error('Invalid file extension: ' + filename);
                     core.warning(`'${extension}' is not allowed.`);
                     isError = true;
