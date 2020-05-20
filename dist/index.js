@@ -30241,7 +30241,7 @@ function run() {
                     filename = file.substring(slash + 1);
                 }
                 if (dot >= 0) {
-                    extension = file.substring(dot++);
+                    extension = file.substring(dot + 1);
                 }
                 core.info(`Checking file: ${filename}`);
                 core.info(`Checking extension: ${extension}`);
