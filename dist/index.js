@@ -30209,54 +30209,28 @@ const core = __importStar(__webpack_require__(694));
 const github = __importStar(__webpack_require__(30));
 const yaml = __importStar(__webpack_require__(660));
 const minimatch_1 = __webpack_require__(326);
+const fileNameRegex = "^[a-z\-\d]+.{1}[a-z]{1,4}$";
+const regexFileName = new RegExp(fileNameRegex);
+const allowedExtensions = ['md', 'yml', 'jpg', 'png'];
+var isError = false;
 function run() {
     return __awaiter(this, void 0, void 0, function* () {
         try {
             core.info(`Starting file check run`);
             const token = core.getInput('repo-token', { required: true });
             const configPath = core.getInput('configuration-path', { required: true });
-            const fileNameRegex = "^[a-z\d/\\-]+\.{1}[a-z]{1,4}"; //core.getInput('filename-regex', {required: true});
-            const fileExtRegex = core.getInput('fileext-regex', { required: true });
-            const regexFileName = new RegExp("^[a-z\-\d]+.{1}[a-z]{1,4}$");
-            //let regexFileExt = new RegExp("(?!\.{1})md|yml|jpg|png");
-            const allowedExtensions = ['md', 'yml', 'jpg', 'png'];
             const prNumber = getPrNumber();
             if (!prNumber) {
                 console.log('Could not get pull request number from context, exiting');
                 return;
             }
             const client = new github.GitHub(token);
-            core.info(`fetching changed files for pr #${prNumber}`);
+            core.info(`Fetching changed files for pr #${prNumber}`);
             const changedFiles = yield getChangedFiles(client, prNumber);
-            core.info(`File name regex: ${fileNameRegex}`);
+            core.info(`Using file name regex: ${fileNameRegex}`);
             core.info(`Allowed file extensions: ${allowedExtensions}`);
-            //core.info(`File extension regex: ${fileExtRegex}`)
-            let isError = false;
             for (const file of changedFiles) {
-                let slash = file.lastIndexOf('/');
-                let dot = file.lastIndexOf('.');
-                let filename = file;
-                let extension = '';
-                if (slash >= 0) {
-                    filename = file.substring(slash + 1);
-                }
-                if (dot >= 0) {
-                    extension = file.substring(dot + 1);
-                }
-                core.debug(`Checking file: ${filename}`);
-                core.debug(`Checking extension: ${extension}`);
-                if (!regexFileName.test(filename)) {
-                    core.info(file);
-                    core.error('Invalid file name: ' + filename);
-                    core.warning('File names must be all lowercase and cannot contain spaces or special characters.');
-                    isError = true;
-                }
-                if (!allowedExtensions.includes(extension)) {
-                    core.info(filename);
-                    core.error('Invalid file extension: ' + filename);
-                    core.warning(`'${extension}' is not allowed.`);
-                    isError = true;
-                }
+                validateFile(file);
             }
             if (isError) {
                 core.setFailed("Found one or more file errors.");
@@ -30292,6 +30266,32 @@ function getPrNumber() {
         return undefined;
     }
     return pullRequest.number;
+}
+function validateFile(file) {
+    let slash = file.lastIndexOf('/');
+    let dot = file.lastIndexOf('.');
+    let filename = file;
+    let extension = '';
+    if (slash >= 0) {
+        filename = file.substring(slash + 1);
+    }
+    if (dot >= 0) {
+        extension = file.substring(dot + 1);
+    }
+    core.debug(`Checking file: ${filename}`);
+    core.debug(`Checking extension: ${extension}`);
+    if (!regexFileName.test(filename)) {
+        core.info(file);
+        core.error('Invalid file name: ' + filename);
+        core.warning('File names must be all lowercase and cannot contain spaces or special characters.');
+        isError = true;
+    }
+    if (!allowedExtensions.includes(extension)) {
+        core.info(filename);
+        core.error('Invalid file extension: ' + filename);
+        core.warning(`'${extension}' files are not allowed.`);
+        isError = true;
+    }
 }
 function getChangedFiles(client, prNumber) {
     return __awaiter(this, void 0, void 0, function* () {
