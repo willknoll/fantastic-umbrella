@@ -23,14 +23,13 @@ async function run() {
     core.info(`fetching changed files for pr #${prNumber}`);
     const changedFiles: string[] = await getChangedFiles(client, prNumber);
 
-    core.info(`File name regex: ${fileNameRegex}`)
-    core.info(`File extension regex: ${fileExtRegex}`)
+    //core.info(`File name regex: ${fileNameRegex}`)
+    //core.info(`File extension regex: ${fileExtRegex}`)
 
     let regexFileName = new RegExp("[a-z\d/\\-]+\.{1}[a-z]{1,4}");
-    let regexFileExt = new RegExp("(?!\.{1})(?:md|yml|jpg|png)");
-
+    let regexFileExt = new RegExp("(?!\.{1})(md|yml|jpg|png)");
+    let isError = false;
     for (const file of changedFiles) {
-        let isError = false;
         let slash = file.lastIndexOf('/');
         let filename = file;
 
@@ -49,12 +48,12 @@ async function run() {
             core.error('Invalid file extension:' + file);
             isError = true;
         }
-
-        if (isError)
-        {
-            core.setFailed("One or more file errors was found.");
-        }
       }
+      if (isError)
+      {
+          core.setFailed("One or more file errors was found.");
+      }
+
    /*
     const labelGlobs: Map<string, string[]> = await getLabelGlobs(
       client,
