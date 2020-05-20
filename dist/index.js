@@ -30230,11 +30230,16 @@ function run() {
             let regexFileName = new RegExp(fileNameRegex);
             let regexFileExt = new RegExp(fileExtRegex);
             for (const file of changedFiles) {
-                if (!regexFileName.test(file)) {
+                let slash = file.lastIndexOf('/');
+                let filename = file;
+                if (slash >= 0) {
+                    filename = file.substring(slash + 1);
+                }
+                if (!regexFileName.test(filename)) {
                     core.error('Invalid file name: ' + file);
                     core.setFailed('One or more invalid file names found.');
                 }
-                if (!regexFileExt.test(file)) {
+                if (!regexFileExt.test(filename)) {
                     core.error('Invalid file extension:' + file);
                     core.setFailed('One or more invalid file types found.');
                 }
