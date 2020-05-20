@@ -30284,16 +30284,16 @@ function validateFile(file) {
     // There are some system files which do not conform to our filename standards
     if (!fileNameExceptions.includes(filename)) {
         if (!regexFileName.test(filename)) {
-            core.info(file);
+            core.warning(file);
             core.error('Invalid file name: ' + filename);
-            core.warning('File names must be all lowercase and cannot contain spaces or special characters.');
+            core.error('File names must be all lowercase and cannot contain spaces or special characters.');
             isError = true;
         }
     }
     if (!allowedExtensions.includes(extension)) {
-        core.info(filename);
+        core.warning(filename);
         core.error('Invalid file extension: ' + filename);
-        core.warning(`'${extension}' files are not allowed.`);
+        core.error(`'${extension}' files are not allowed.`);
         isError = true;
     }
 }
