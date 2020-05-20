@@ -6,6 +6,7 @@ import {Minimatch} from 'minimatch';
 const fileNameRegex = "^[a-z\-\d]+.{1}[a-z]{1,4}$";
 const regexFileName = new RegExp(fileNameRegex);
 const allowedExtensions = ['md', 'yml', 'jpg', 'png'];
+const fileNameExceptions = ['README.md'];
 var isError = false;
 
 async function run() {
@@ -87,11 +88,15 @@ function validateFile(file: string) {
     core.debug(`Checking file: ${filename}`);
     core.debug(`Checking extension: ${extension}`);
 
-    if (!regexFileName.test(filename)) {
-        core.info(file)
-        core.error('Invalid file name: ' + filename);
-        core.warning('File names must be all lowercase and cannot contain spaces or special characters.')
-        isError = true;
+    // There are some system files which do not conform to our filename standards
+    if (!fileNameExceptions.includes(filename)) {
+        if (!regexFileName.test(filename)) {
+
+            core.info(file)
+            core.error('Invalid file name: ' + filename);
+            core.warning('File names must be all lowercase and cannot contain spaces or special characters.')
+            isError = true;
+        }
     }
 
     if (!allowedExtensions.includes(extension)) {

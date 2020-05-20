@@ -30212,6 +30212,7 @@ const minimatch_1 = __webpack_require__(326);
 const fileNameRegex = "^[a-z\-\d]+.{1}[a-z]{1,4}$";
 const regexFileName = new RegExp(fileNameRegex);
 const allowedExtensions = ['md', 'yml', 'jpg', 'png'];
+const fileNameExceptions = ['README.md'];
 var isError = false;
 function run() {
     return __awaiter(this, void 0, void 0, function* () {
@@ -30280,11 +30281,14 @@ function validateFile(file) {
     }
     core.debug(`Checking file: ${filename}`);
     core.debug(`Checking extension: ${extension}`);
-    if (!regexFileName.test(filename)) {
-        core.info(file);
-        core.error('Invalid file name: ' + filename);
-        core.warning('File names must be all lowercase and cannot contain spaces or special characters.');
-        isError = true;
+    // There are some system files which do not conform to our filename standards
+    if (!fileNameExceptions.includes(filename)) {
+        if (!regexFileName.test(filename)) {
+            core.info(file);
+            core.error('Invalid file name: ' + filename);
+            core.warning('File names must be all lowercase and cannot contain spaces or special characters.');
+            isError = true;
+        }
     }
     if (!allowedExtensions.includes(extension)) {
         core.info(filename);
