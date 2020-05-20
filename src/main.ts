@@ -26,10 +26,11 @@ async function run() {
     core.info(`File name regex: ${fileNameRegex}`)
     core.info(`File extension regex: ${fileExtRegex}`)
 
-    let regexFileName = new RegExp(fileNameRegex);
+    let regexFileName = new RegExp("[a-z\d/\\-]+\.{1}[a-z]{1,4}");
     let regexFileExt = new RegExp(fileExtRegex);
 
     for (const file of changedFiles) {
+        let isError = false;
         let slash = file.lastIndexOf('/');
         let filename = file;
 
@@ -41,12 +42,17 @@ async function run() {
         if (!regexFileName.test(filename))
         {
             core.error('Invalid file name: ' + file);
-            core.setFailed('One or more invalid file names found.');
+            isError = true;
         }
         if (!regexFileExt.test(filename))
         {
             core.error('Invalid file extension:' + file);
-            core.setFailed('One or more invalid file types found.');
+            isError = true;
+        }
+
+        if (isError)
+        {
+            core.setFailed("One or more file errors was found.");
         }
       }
    /*
