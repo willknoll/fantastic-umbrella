@@ -30319,7 +30319,7 @@ function validateDirectory(file) {
         core.error('Root level file changes must be approved.');
     }
     else {
-        let dir = file.substring(0, slash - 1);
+        let dir = file.substring(0, slash);
         if (!existingDirs.includes(dir)) {
             core.warning(file);
             core.error(`New root level directory '${dir}' must be approved`);
