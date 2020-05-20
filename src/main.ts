@@ -29,6 +29,7 @@ async function run() {
 
     core.info(`Using file name regex: ${fileNameRegex}`);
     core.info(`Allowed file extensions: ${allowedExtensions}`);
+    core.info(`File name exceptions: ${fileNameExceptions}`);
 
     for (const file of changedFiles) {
         validateFile(file);
