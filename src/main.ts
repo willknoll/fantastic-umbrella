@@ -11,7 +11,7 @@ async function run() {
     const configPath = core.getInput('configuration-path', {required: true});
     const fileNameRegex = "^[a-z\d/\\-]+\.{1}[a-z]{1,4}" //core.getInput('filename-regex', {required: true});
     const fileExtRegex = core.getInput('fileext-regex', {required: true})
-    const regexFileName = new RegExp("^[a-z\d/\\-]+\.{1}[a-z]{1,4}");
+    const regexFileName = new RegExp("^[a-z\-\d]+.{1}[a-z]{1,4}$");
     //let regexFileExt = new RegExp("(?!\.{1})md|yml|jpg|png");
     const allowedExtensions = ['md', 'yml', 'jpg', 'png'];
 
