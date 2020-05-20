@@ -30246,11 +30246,13 @@ function run() {
                 core.info(`Checking file: ${filename}`);
                 core.info(`Checking extension: ${extension}`);
                 if (!regexFileName.test(filename)) {
-                    core.error('Invalid file name: ' + file);
+                    core.error('Invalid file name: ' + filename);
+                    core.warning('File names must be all lowercase and cannot contain spaces or special characters.');
                     isError = true;
                 }
                 if (!allowedExtensions.includes(extension)) {
-                    core.error('Invalid file extension: ' + extension);
+                    core.error('Invalid file extension: ' + filename);
+                    core.warning(`'${extension}' is not allowed.`);
                     isError = true;
                 }
             }
