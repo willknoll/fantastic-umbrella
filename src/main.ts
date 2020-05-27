@@ -132,7 +132,7 @@ async function run() {
       const { data: pullRequest } = await client.pulls.listFiles({
         owner,
         repo,
-        pull_number: prNumber //issue_pr_number
+        pull_number: prNumber
       })
 
       let newPRobj
@@ -168,22 +168,34 @@ async function run() {
         console.log(lfsFile)
 
         let lfsFileNames = lfsFile.join(", ")
-        let bodyTemplate = `## :warning: Possible large file(s) detected :warning: \n
-        The following file(s) exceeds the file size limit: ${fsl} bytes, as set in the .yml configuration files
+        let bodyTemplateSingle = `## :warning: Possible large file detected :warning: \n
+        The following file exceeds the file size limit of ${fsl} bytes:
         ${lfsFileNames.toString()}
-        Please reduce the size of the file or remove from the pull request and upload to BCM instead.`
+        Please reduce the size of the file or remove it from the pull request and upload to BCM instead.`
+
+        let bodyTemplateMulti = `## :warning: Possible large files detected :warning: \n
+        The following files exceed the file size limit of ${fsl} bytes:
+        ${lfsFileNames.toString()}
+        Please reduce the size of the files or remove them from the pull request and upload to BCM instead.`
+
+        let bodyTemplate = bodyTemplateMulti;
+
+        if (lfsFile.length === 1) {
+          bodyTemplate = bodyTemplateSingle;
+        }
+
 
         await client.issues.addLabels({
           owner,
           repo,
-          issue_number: prNumber, //issue_pr_number,
+          issue_number: prNumber,
           labels
         })
 
         await client.issues.createComment({
           owner,
           repo,
-          issue_number: prNumber, //issue_pr_number,
+          issue_number: prNumber,
           body: bodyTemplate
         })
 

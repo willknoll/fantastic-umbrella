@@ -30322,7 +30322,7 @@ function run() {
                 const { data: pullRequest } = yield client.pulls.listFiles({
                     owner,
                     repo,
-                    pull_number: prNumber //issue_pr_number
+                    pull_number: prNumber
                 });
                 let newPRobj;
                 let prFilesWithBlobSize = yield Promise.all(pullRequest.map(function (item) {
@@ -30351,10 +30351,18 @@ function run() {
                     console.log("Detected large file(s):");
                     console.log(lfsFile);
                     let lfsFileNames = lfsFile.join(", ");
-                    let bodyTemplate = `## :warning: Possible large file(s) detected :warning: \n
-        The following file(s) exceeds the file size limit: ${fsl} bytes, as set in the .yml configuration files
+                    let bodyTemplateSingle = `## :warning: Possible large file detected :warning: \n
+        The following file exceeds the file size limit of ${fsl} bytes:
         ${lfsFileNames.toString()}
-        Please reduce the size of the file or remove from the pull request and upload to BCM instead.`;
+        Please reduce the size of the file or remove it from the pull request and upload to BCM instead.`;
+                    let bodyTemplateMulti = `## :warning: Possible large files detected :warning: \n
+        The following files exceed the file size limit of ${fsl} bytes:
+        ${lfsFileNames.toString()}
+        Please reduce the size of the files or remove them from the pull request and upload to BCM instead.`;
+                    let bodyTemplate = bodyTemplateMulti;
+                    if (lfsFile.length === 1) {
+                        bodyTemplate = bodyTemplateSingle;
+                    }
                     yield client.issues.addLabels({
                         owner,
                         repo,
