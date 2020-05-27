@@ -14,7 +14,7 @@ inputs:
   file-size-limit:
     description: 'Maximum file size in bytes'
     required: true
-    default: '1000000' # Default 1MB
+    default: '1048576' # Default 1MB
 outputs:
   time: # id of output
     description: 'The time the step ran'

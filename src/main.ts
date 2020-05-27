@@ -132,7 +132,7 @@ async function run() {
       const { data: pullRequest } = await client.pulls.listFiles({
         owner,
         repo,
-        pull_number: issue_pr_number
+        pull_number: prNumber //issue_pr_number
       })
 
       let newPRobj
@@ -170,21 +170,20 @@ async function run() {
         let lfsFileNames = lfsFile.join(", ")
         let bodyTemplate = `## :warning: Possible large file(s) detected :warning: \n
         The following file(s) exceeds the file size limit: ${fsl} bytes, as set in the .yml configuration files
-        
         ${lfsFileNames.toString()}
         Consider using git-lfs as best practises to track and commit file(s)`
 
         await client.issues.addLabels({
           owner,
           repo,
-          issue_number: issue_pr_number,
+          issue_number: prNumber, //issue_pr_number,
           labels
         })
 
         await client.issues.createComment({
           owner,
           repo,
-          issue_number: issue_pr_number,
+          issue_number: prNumber, //issue_pr_number,
           body: bodyTemplate
         })
 

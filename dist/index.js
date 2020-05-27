@@ -30322,7 +30322,7 @@ function run() {
                 const { data: pullRequest } = yield client.pulls.listFiles({
                     owner,
                     repo,
-                    pull_number: issue_pr_number
+                    pull_number: prNumber //issue_pr_number
                 });
                 let newPRobj;
                 let prFilesWithBlobSize = yield Promise.all(pullRequest.map(function (item) {
@@ -30353,19 +30353,18 @@ function run() {
                     let lfsFileNames = lfsFile.join(", ");
                     let bodyTemplate = `## :warning: Possible large file(s) detected :warning: \n
         The following file(s) exceeds the file size limit: ${fsl} bytes, as set in the .yml configuration files
-        
         ${lfsFileNames.toString()}
         Consider using git-lfs as best practises to track and commit file(s)`;
                     yield client.issues.addLabels({
                         owner,
                         repo,
-                        issue_number: issue_pr_number,
+                        issue_number: prNumber,
                         labels
                     });
                     yield client.issues.createComment({
                         owner,
                         repo,
-                        issue_number: issue_pr_number,
+                        issue_number: prNumber,
                         body: bodyTemplate
                     });
                     core.setOutput("lfsFiles", lfsFile);
