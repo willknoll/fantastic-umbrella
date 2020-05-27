@@ -93,7 +93,7 @@ async function run() {
     }
 
     // Check file sizes
-    const fsl = core.getInput("filesizelimit")
+    const fsl = core.getInput("file-size-limit")
 
     console.log(`Default configured filesizelimit is set to ${fsl} bytes...`)
     console.log(`Name of Repository is ${repo} and the owner is ${owner}`)
@@ -114,7 +114,7 @@ async function run() {
           repo,
           name: "lfs-detected!",
           color: "ff1493",
-          description: "Warning Label for use when LFS is detected in the commits of a Pull Request"
+          description: "Warning Label for use when a large file is detected in the commits of a Pull Request"
         })
         console.log(`No lfs warning label detected. Creating new label ...`)
         console.log(`LFS warning label created`)
@@ -171,7 +171,7 @@ async function run() {
         let bodyTemplate = `## :warning: Possible large file(s) detected :warning: \n
         The following file(s) exceeds the file size limit: ${fsl} bytes, as set in the .yml configuration files
         ${lfsFileNames.toString()}
-        Consider using git-lfs as best practises to track and commit file(s)`
+        Please reduce the size of the file or remove from the pull request and upload to BCM instead.`
 
         await client.issues.addLabels({
           owner,
@@ -188,10 +188,10 @@ async function run() {
         })
 
         core.setOutput("lfsFiles", lfsFile)
-        core.setFailed(`Large File detected! Setting PR status to failed. Consider using git-lfs to track the LFS files`)
+        core.setFailed(`Large File detected! Reduce the file size or upload to BCM.`)
 
       } else {
-        console.log("No large file(s) detected...")
+        console.log("No large files detected...")
       }
 
       // TODO:
