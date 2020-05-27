@@ -11,6 +11,10 @@ inputs:
     description: 'The path for configurations'
     required: true
     default: '.github/labeler.yml'
+  file-size-limit:
+    description: 'Maximum file size in bytes'
+    required: true
+    default: '1000000' # Default 1MB
 outputs:
   time: # id of output
     description: 'The time the step ran'

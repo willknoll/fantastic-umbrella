@@ -30263,6 +30263,11 @@ function run() {
                 return;
             }
             const client = new github.GitHub(token);
+            const context = github.context;
+            const { owner, repo } = context.repo;
+            const event_type = context.eventName;
+            let issue_pr_number;
+            const labels = ["lfs-detected!"];
             core.info(`Fetching changed files for pr #${prNumber}`);
             const changedFiles = yield getChangedFiles(client, prNumber);
             core.info(`Using file name regex: ${fileNameRegex}`);
@@ -30279,6 +30284,101 @@ function run() {
             }
             if (isError) {
                 core.setFailed("Found one or more file errors.");
+            }
+            // Check file sizes
+            const fsl = core.getInput("filesizelimit");
+            console.log(`Default configured filesizelimit is set to ${fsl} bytes...`);
+            console.log(`Name of Repository is ${repo} and the owner is ${owner}`);
+            console.log(`Triggered event is ${event_type}`);
+            // Get LFS Warning Label
+            let lfslabelObj = {};
+            try {
+                lfslabelObj = yield client.issues.getLabel({
+                    owner,
+                    repo,
+                    name: "lfs-detected!"
+                });
+            }
+            catch (error) {
+                if (error.message === "Not Found") {
+                    yield client.issues.createLabel({
+                        owner,
+                        repo,
+                        name: "lfs-detected!",
+                        color: "ff1493",
+                        description: "Warning Label for use when LFS is detected in the commits of a Pull Request"
+                    });
+                    console.log(`No lfs warning label detected. Creating new label ...`);
+                    console.log(`LFS warning label created`);
+                }
+                else {
+                    console.log(`getLabel error: ${error.message}`);
+                }
+            }
+            // Get List of files for Pull Request
+            if (event_type === "pull_request") {
+                //issue_pr_number = context.payload.pull_request.number;
+                console.log(`The PR number is: ${prNumber}`);
+                const { data: pullRequest } = yield client.pulls.listFiles({
+                    owner,
+                    repo,
+                    pull_number: issue_pr_number
+                });
+                let newPRobj;
+                let prFilesWithBlobSize = yield Promise.all(pullRequest.map(function (item) {
+                    return __awaiter(this, void 0, void 0, function* () {
+                        const { data: prFilesBlobs } = yield client.git.getBlob({
+                            owner,
+                            repo,
+                            file_sha: item.sha
+                        });
+                        newPRobj = {
+                            filename: item.filename,
+                            filesha: item.sha,
+                            fileblobsize: prFilesBlobs.size
+                        };
+                        return newPRobj;
+                    });
+                }));
+                console.log(prFilesWithBlobSize);
+                let lfsFile = [];
+                for (let prop in prFilesWithBlobSize) {
+                    if (prFilesWithBlobSize[prop].fileblobsize > fsl) {
+                        lfsFile.push(prFilesWithBlobSize[prop].filename);
+                    }
+                }
+                if (lfsFile.length > 0) {
+                    console.log("Detected large file(s):");
+                    console.log(lfsFile);
+                    let lfsFileNames = lfsFile.join(", ");
+                    let bodyTemplate = `## :warning: Possible large file(s) detected :warning: \n
+        The following file(s) exceeds the file size limit: ${fsl} bytes, as set in the .yml configuration files
+        
+        ${lfsFileNames.toString()}
+        Consider using git-lfs as best practises to track and commit file(s)`;
+                    yield client.issues.addLabels({
+                        owner,
+                        repo,
+                        issue_number: issue_pr_number,
+                        labels
+                    });
+                    yield client.issues.createComment({
+                        owner,
+                        repo,
+                        issue_number: issue_pr_number,
+                        body: bodyTemplate
+                    });
+                    core.setOutput("lfsFiles", lfsFile);
+                    core.setFailed(`Large File detected! Setting PR status to failed. Consider using git-lfs to track the LFS files`);
+                }
+                else {
+                    console.log("No large file(s) detected...");
+                }
+                // TODO:
+                // git lfs attributes misconfiguration aka missing installation on client while git-lfs is configured on repo upstream
+            }
+            else {
+                console.log(`No Pull Request detected. Skipping LFS warning check`);
             }
             /*
              const labelGlobs: Map<string, string[]> = await getLabelGlobs(
