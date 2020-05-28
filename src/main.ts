@@ -163,24 +163,6 @@ function getPrNumber(): number | undefined {
   return pullRequest.number;
 }
 
-/*
-function validateDirectories(file: string){
-    let slash = file.indexOf('/');
-
-    if (slash <= 0) {
-      core.warning(file);
-      core.error('Root level file changes must be approved.');
-    } else {
-      let dir = file.substring(0, slash);
-      if (!existingDirs.includes(dir))
-      {
-        core.warning(file);
-        newRootDirs.indexOf(dir) === -1 ? newRootDirs.push(dir) : core.debug(`${dir} already exists in new root dir array.`);
-      }
-    }
-}
-*/
-
 // Ensure that all files found in the PR are not in a new top level directory or at the root themselves
 function validateDirectories(files: string[]) : string[]{
   let foundNew : string[] = [];
