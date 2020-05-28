@@ -164,8 +164,17 @@ async function run() {
       }
 
       if (lfsFile.length > 0) {
-        console.log("Detected large file(s):")
-        console.log(lfsFile)
+        if (lfsFile.length === 1) {
+          console.warn("Detected large file:")
+        } else {
+          console.warn("Detected large files:")
+        }
+
+        for (const largeFile in lfsFile) {
+          console.log(`  ${largeFile}`);
+        }
+
+        //console.log(lfsFile)
 
         let lfsFileNames = lfsFile.join(", ")
         let bodyTemplateSingle = `## :warning: Possible large file detected :warning: \n
