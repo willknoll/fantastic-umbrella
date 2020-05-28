@@ -7,6 +7,10 @@ const fileNameRegex = "^[a-z\-\d]+.{1}[a-z]{1,4}$";
 const regexFileName = new RegExp(fileNameRegex);
 const allowedExtensions = ['md', 'yml', 'jpg', 'png'];
 const fileNameExceptions = ['README.md'];
+const labelLargeFile = "lf-detected";
+const labelRootDir = "new-root-dir";
+const labelFileName = "invalid-file-name";
+//TODO: Can we pull this list from the existing repo files instead?
 const existingDirs = [
     '.git',
     '.github',
@@ -45,12 +49,14 @@ const existingDirs = [
     'working-with-the-field'
 ];
 
-let octokit;
-
-// Keeps a list of any new root level directories that are found
-let newRootDirs : string[] = [];
 // Universal error flag. If ever set to true, the whole action is set to fail
 var isError = false;
+
+// Label objects for any issues found
+let largeFileLabelObject : {} = {};
+let rootDirLabelObject : {} = {};
+let fileNameLabelObject : {} = {};
+let labels : string[] = []; // Array to hold all lables to add to the PR from this run, if any
 
 // Main function that runs everything
 async function run() {
@@ -70,174 +76,67 @@ async function run() {
     }
 
     const client = new github.GitHub(token);
-    const context = github.context
-    const { owner, repo } = context.repo
-    const event_type = context.eventName
+    const context = github.context;
+    const { owner, repo } = context.repo;
+    const event_type = context.eventName;
+    const fileSizeLimit = core.getInput("file-size-limit");
 
-    const labels = ["lfs-detected!"]
+    // Ensure labels exist
+    let largeFileLabelObject = getLargeFileLabel(client, owner, repo);
+    let rootDirLabelObject = getNewRootItemLabel(client, owner, repo);
+    let fileNameLabelObject = getInvalidFileLabel(client, owner, repo);
+
+    //const labels = ["lfs-detected"]
 
     // Print some basic information about our configuration
+    core.info(`Name of Repository is ${repo} and the owner is ${owner}`)
+    core.info(`Triggered event is ${event_type}`)
     core.info(`Using file name regex: ${fileNameRegex}`);
     core.info(`Allowed file extensions: ${allowedExtensions}`);
     core.info(`File name exceptions: ${fileNameExceptions}`);
     core.info(`Existing directories: ${existingDirs}`);
+    core.info(`File size limit (bytes): ${fileSizeLimit}`);
 
     // Get list of all files changed in the PR
     core.info(`Fetching changed files for pr #${prNumber}`);
     const changedFiles: string[] = await getChangedFiles(client, prNumber);
 
     // Check to see if any new root level files or directories were created
+    // Print an error for each new root fie or direcory found
     console.log("Inspecting directories...");
-    let newRootDirs2 = validateDirectory2(changedFiles);
-    //for (const file of changedFiles)
-    //{
-    //    validateDirectory(file);
-    //}
-
-    for (let newDir of newRootDirs2)
+    let newRootDirs = validateDirectories(changedFiles);
+    for (let newDir of newRootDirs)
     {
         core.error(`New root level directory '${newDir}' must be approved`);
     }
 
+    // Check various filename properties for validity
     console.log("Validating files...");
     for (const file of changedFiles) {
         validateFile(file);
     }
 
+    // Check file sizes
+    console.log("Validating file sizes...");
+    validateFileSizes(client, owner, repo, prNumber, fileSizeLimit);
+
     if (isError)
     {
         core.setFailed("Found one or more file errors.");
+        // double-check that there are labels to add
+        if (labels.length > 0) {
+          await client.issues.addLabels({
+            owner,
+            repo,
+            issue_number: prNumber,
+            labels
+          });
+        }
     }
-
-    // Check file sizes
-    const fsl = core.getInput("file-size-limit")
-
-    console.log(`Configured file size limit is set to ${fsl} bytes...`)
-    console.log(`Name of Repository is ${repo} and the owner is ${owner}`)
-    console.log(`Triggered event is ${event_type}`)
-
-    // Get LFS Warning Label
-    let lfslabelObj = {}
-    try {
-      lfslabelObj = await client.issues.getLabel({
-        owner,
-        repo,
-        name: "lfs-detected!"
-      })
-    } catch (error) {
-      if (error.message === "Not Found") {
-        await client.issues.createLabel({
-          owner,
-          repo,
-          name: "lfs-detected!",
-          color: "ff1493",
-          description: "Warning Label for use when a large file is detected in the commits of a Pull Request"
-        })
-        console.log(`No lfs warning label detected. Creating new label ...`)
-        console.log(`LFS warning label created`)
-      } else {
-        console.log(`getLabel error: ${error.message}`)
-      }
-    }
-
-    // Get List of files for Pull Request
-    if (event_type === "pull_request") {
-      //issue_pr_number = context.payload.pull_request.number;
-
-      console.log(`The PR number is: ${prNumber}`)
-
-      const { data: pullRequest } = await client.pulls.listFiles({
-        owner,
-        repo,
-        pull_number: prNumber
-      })
-
-      let newPRobj
-          let prFilesWithBlobSize = await Promise.all(
-            pullRequest.map(async function(item) {
-              const { data: prFilesBlobs } = await client.git.getBlob({
-                owner,
-                repo,
-                file_sha: item.sha
-              })
-
-              newPRobj = {
-                filename: item.filename,
-                filesha: item.sha,
-                fileblobsize: prFilesBlobs.size
-              }
-
-              return newPRobj
-            })
-          )
-      
-      core.debug(prFilesWithBlobSize.toString())
-
-      let lfsFile : string[] = [];
-      for (let prop in prFilesWithBlobSize) {
-        if (prFilesWithBlobSize[prop].fileblobsize > fsl) {
-          lfsFile.push(prFilesWithBlobSize[prop].filename)
-        }
-      }
-
-      if (lfsFile.length > 0) {
-        if (lfsFile.length === 1) {
-          core.warning("Detected large file:")
-        } else {
-          core.warning("Detected large files:")
-        }
-
-        for (let largeFile of lfsFile) {
-          console.log(`  ${largeFile}`);
-        }
-
-        //console.log(lfsFile)
-
-        let lfsFileNames = lfsFile.join(`\n`)
-        let bodyTemplateSingle = `## :warning: Possible large file detected :warning: \n
-        The following file exceeds the file size limit of ${fsl} bytes:
-        ${lfsFileNames.toString()}
-        Please reduce the size of the file or remove it from the pull request and upload to BCM instead.`
-
-        let bodyTemplateMulti = `## :warning: Possible large files detected :warning: \n
-        The following files exceed the file size limit of ${fsl} bytes:
-        ${lfsFileNames.toString()}
-        Please reduce the size of the files or remove them from the pull request and upload to BCM instead.`
-
-        let bodyTemplate = bodyTemplateMulti;
-
-        if (lfsFile.length === 1) {
-          bodyTemplate = bodyTemplateSingle;
-        }
-
-
-        await client.issues.addLabels({
-          owner,
-          repo,
-          issue_number: prNumber,
-          labels
-        })
-
-        await client.issues.createComment({
-          owner,
-          repo,
-          issue_number: prNumber,
-          body: bodyTemplate
-        })
-
-        core.setOutput("lfsFiles", lfsFile)
-        core.setFailed(`Large File detected! Reduce the file size or upload to BCM.`)
-
-      } else {
-        console.log("No large files detected...")
-      }
 
       // TODO:
       // git lfs attributes misconfiguration aka missing installation on client while git-lfs is configured on repo upstream
 
-    } else {
-      console.log(`No Pull Request detected. Skipping LFS warning check`)
-    }
                
    /*
     const labelGlobs: Map<string, string[]> = await getLabelGlobs(
@@ -272,7 +171,8 @@ function getPrNumber(): number | undefined {
   return pullRequest.number;
 }
 
-function validateDirectory(file: string){
+/*
+function validateDirectories(file: string){
     let slash = file.indexOf('/');
 
     if (slash <= 0) {
@@ -287,24 +187,29 @@ function validateDirectory(file: string){
       }
     }
 }
+*/
 
 // Ensure that all files found in the PR are not in a new top level directory or at the root themselves
-function validateDirectory2(files: string[]) : string[]{
+function validateDirectories(files: string[]) : string[]{
   let foundNew : string[] = [];
 
   for (let file of files) {
     let slash = file.indexOf('/');
     if (slash <= 0) {
         // Found new root level file
+        isError = true;
         core.warning(file);
         core.error('Root level file changes must be approved.');
+        labels.indexOf(labelRootDir) === -1 ? labels.push(labelRootDir) : core.debug(`${labelRootDir} already exists in labels array`);
     } else {
         let dir = file.substring(0, slash);
         if (!existingDirs.includes(dir))
         {
+            isError = true;
             core.warning(file);
             // Only add newly found directories once
             foundNew.indexOf(dir) === -1 ? foundNew.push(dir) : core.debug(`${dir} already exists in new root dir array.`);
+            labels.indexOf(labelRootDir) === -1 ? labels.push(labelRootDir) : core.debug(`${labelRootDir} already exists in labels array`);
         }
     }
   }
@@ -334,6 +239,7 @@ function validateFile(file: string) {
             core.warning(file)
             //core.error('Invalid file name: ' + filename);
             core.error('File names must be all lowercase and cannot contain spaces or special characters.')
+            labels.indexOf(labelFileName) === -1 ? labels.push(labelFileName) : core.debug(`${labelFileName} already exists in labels array`);
             isError = true;
         }
     }
@@ -342,7 +248,81 @@ function validateFile(file: string) {
         core.warning(file)
         //core.error('Invalid file extension: ' + filename);
         core.error(`'${extension}' files are not allowed.`);
+        labels.indexOf(labelFileName) === -1 ? labels.push(labelFileName) : core.debug(`${labelFileName} already exists in labels array`);
         isError = true;
+    }
+}
+
+async function validateFileSizes(client: github.GitHub, owner: string, repo: string, prNumber: number, fsl: string)
+{
+//    console.log(`The PR number is: ${prNumber}`)
+    const { data: pullRequest } = await client.pulls.listFiles({
+      owner,
+      repo,
+      pull_number: prNumber
+    })
+    let newPRobj
+        let prFilesWithBlobSize = await Promise.all(
+          pullRequest.map(async function(item) {
+            const { data: prFilesBlobs } = await client.git.getBlob({
+              owner,
+              repo,
+              file_sha: item.sha
+            })
+            newPRobj = {
+              filename: item.filename,
+              filesha: item.sha,
+              fileblobsize: prFilesBlobs.size
+            }
+            return newPRobj
+          })
+        )
+
+    core.debug(prFilesWithBlobSize.toString())
+    let lfsFile : string[] = [];
+    for (let prop in prFilesWithBlobSize) {
+      if (prFilesWithBlobSize[prop].fileblobsize > fsl) {
+        lfsFile.push(prFilesWithBlobSize[prop].filename)
+      }
+    }
+    if (lfsFile.length > 0) {
+      if (lfsFile.length === 1) {
+        core.warning("Detected large file:")
+      } else {
+        core.warning("Detected large files:")
+      }
+      for (let largeFile of lfsFile) {
+        console.log(`  ${largeFile}`);
+      }
+      //console.log(lfsFile)
+      let lfsFileNames = lfsFile.join(`\n`)
+      let bodyTemplateSingle = `## :warning: Possible large file detected :warning: \n
+      The following file exceeds the file size limit of ${fsl} bytes:
+      ${lfsFileNames.toString()}
+      Please reduce the size of the file or remove it from the pull request and upload to BCM instead.`
+      let bodyTemplateMulti = `## :warning: Possible large files detected :warning: \n
+      The following files exceed the file size limit of ${fsl} bytes:
+      ${lfsFileNames.toString()}
+      Please reduce the size of the files or remove them from the pull request and upload to BCM instead.`
+      let bodyTemplate = bodyTemplateMulti;
+      if (lfsFile.length === 1) {
+        bodyTemplate = bodyTemplateSingle;
+      }
+
+      /*
+      await client.issues.createComment({
+        owner,
+        repo,
+        issue_number: prNumber,
+        body: bodyTemplate
+      })
+      */
+      core.setOutput("lfsFiles", lfsFile)
+      isError = true;
+      core.error(`Large File detected! Reduce the file size or upload to BCM.`)
+      labels.indexOf(labelLargeFile) === -1 ? labels.push(labelLargeFile) : core.debug(`${labelLargeFile} already exists in labels array`);
+    } else {
+      console.log("No large files detected...")
     }
 }
 
@@ -430,6 +410,93 @@ function checkGlobs(changedFiles: string[], globs: string[]): boolean {
   return false;
 }
 
+async function getLargeFileLabel(client: github.GitHub, owner: string, repo: string)
+{
+    // Get large file Warning Label
+    let lfslabelObj = {}
+    try {
+      lfslabelObj = await client.issues.getLabel({
+        owner,
+        repo,
+        name: labelLargeFile
+      })
+    } catch (error) {
+      if (error.message === "Not Found") {
+        await client.issues.createLabel({
+          owner,
+          repo,
+          name: labelLargeFile,
+          color: "ff1493",
+          description: "Warning Label for use when a large file is detected in the commits of a Pull Request"
+        })
+        console.log(`No large file warning label detected. Creating new label ...`)
+        console.log(`Large file warning label created`)
+      } else {
+        console.log(`getLabel error: ${error.message}`)
+      }
+    }
+
+    return lfslabelObj;
+}
+
+async function getInvalidFileLabel(client: github.GitHub, owner: string, repo: string)
+{
+  // Get invalid file name Warning Label
+  let ifLabelObj = {}
+  try {
+    ifLabelObj = await client.issues.getLabel({
+      owner,
+      repo,
+      name: labelFileName
+    })
+  } catch (error) {
+    if (error.message === "Not Found") {
+      await client.issues.createLabel({
+        owner,
+        repo,
+        name: labelFileName,
+        color: "ff1493",
+        description: "Warning Label for use when an invalid file name is detected in the commits of a Pull Request"
+      })
+      console.log(`No invalid file name warning label detected. Creating new label ...`)
+      console.log(`Invalid file name warning label created`)
+    } else {
+      console.log(`getLabel error: ${error.message}`)
+    }
+  }
+
+  return ifLabelObj;
+}
+
+async function getNewRootItemLabel(client: github.GitHub, owner: string, repo: string)
+{
+    // Get new root item Warning Label
+    let nrLabelObj = {}
+    try {
+      nrLabelObj = await client.issues.getLabel({
+        owner,
+        repo,
+        name: labelRootDir
+      })
+    } catch (error) {
+      if (error.message === "Not Found") {
+        await client.issues.createLabel({
+          owner,
+          repo,
+          name: labelRootDir,
+          color: "ff1493",
+          description: "Warning Label for use when a new root item is detected in the commits of a Pull Request"
+        })
+        console.log(`No new root item warning label detected. Creating new label ...`)
+        console.log(`New root item warning label created`)
+      } else {
+        console.log(`getLabel error: ${error.message}`)
+      }
+    }
+
+    return nrLabelObj;
+}
+
 async function addLabels(
   client: github.GitHub,
   prNumber: number,
@@ -442,5 +509,7 @@ async function addLabels(
     labels: labels
   });
 }
+
+
 
 run();
