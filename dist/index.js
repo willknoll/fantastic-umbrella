@@ -30315,6 +30315,7 @@ function run() {
             if (isError) {
                 core.setFailed("Found one or more file errors.");
                 // double-check that there are labels to add
+                console.log(`Labels to add: ${labels}`);
                 if (labels.length > 0) {
                     yield client.issues.addLabels({
                         owner,
