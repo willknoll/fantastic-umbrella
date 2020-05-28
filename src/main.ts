@@ -272,7 +272,7 @@ function validateDirectory(file: string){
         if (!existingDirs.includes(dir))
         {
             core.warning(file);
-            newRootDirs.push(dir);
+            newRootDirs.indexOf(dir) === -1 ? newRootDirs.push(dir) : core.debug(`${dir} already exists in new root dir array.`);
             //core.error(`New root level directory '${dir}' must be approved`);
         }
     }
