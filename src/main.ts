@@ -97,6 +97,10 @@ async function run() {
     core.info(`Existing directories: ${existingDirs}`);
     core.info(`File size limit (bytes): ${fileSizeLimit}`);
 
+    // Check file sizes
+    console.log("Validating file sizes...");
+    validateFileSizes(client, owner, repo, prNumber, fileSizeLimit);
+
     // Get list of all files changed in the PR
     core.info(`Fetching changed files for pr #${prNumber}`);
     const changedFiles: string[] = await getChangedFiles(client, prNumber);
@@ -116,9 +120,7 @@ async function run() {
         validateFile(file);
     }
 
-    // Check file sizes
-    console.log("Validating file sizes...");
-    validateFileSizes(client, owner, repo, prNumber, fileSizeLimit);
+
 
     if (isError)
     {
