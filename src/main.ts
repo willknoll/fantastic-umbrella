@@ -44,16 +44,25 @@ const existingDirs = [
     'useful-urls',
     'working-with-the-field'
 ];
+
+let octokit;
+
+// Keeps a list of any new root level directories that are found
 let newRootDirs : string[] = [];
+// Universal error flag. If ever set to true, the whole action is set to fail
 var isError = false;
 
+// Main function that runs everything
 async function run() {
   try {
-    core.info(`Starting file check run`);
+    core.info(`Starting file and directory check run`);
 
+    // Token is provided by the system
     const token = core.getInput('repo-token', {required: true});
+    // Config path currently unused
     const configPath = core.getInput('configuration-path', {required: true});
 
+    // If we don't find the Pull Request number, we can't proceed
     const prNumber = getPrNumber();
     if (!prNumber) {
       console.log('Could not get pull request number from context, exiting');
@@ -65,25 +74,27 @@ async function run() {
     const { owner, repo } = context.repo
     const event_type = context.eventName
 
-    let issue_pr_number
     const labels = ["lfs-detected!"]
 
-
-    core.info(`Fetching changed files for pr #${prNumber}`);
-    const changedFiles: string[] = await getChangedFiles(client, prNumber);
-
+    // Print some basic information about our configuration
     core.info(`Using file name regex: ${fileNameRegex}`);
     core.info(`Allowed file extensions: ${allowedExtensions}`);
     core.info(`File name exceptions: ${fileNameExceptions}`);
     core.info(`Existing directories: ${existingDirs}`);
 
-    console.log("Inspecting directories...");
-    for (const file of changedFiles)
-    {
-        validateDirectory(file);
-    }
+    // Get list of all files changed in the PR
+    core.info(`Fetching changed files for pr #${prNumber}`);
+    const changedFiles: string[] = await getChangedFiles(client, prNumber);
 
-    for (let newDir of newRootDirs)
+    // Check to see if any new root level files or directories were created
+    console.log("Inspecting directories...");
+    let newRootDirs2 = validateDirectory2(changedFiles);
+    //for (const file of changedFiles)
+    //{
+    //    validateDirectory(file);
+    //}
+
+    for (let newDir of newRootDirs2)
     {
         core.error(`New root level directory '${newDir}' must be approved`);
     }
@@ -101,7 +112,7 @@ async function run() {
     // Check file sizes
     const fsl = core.getInput("file-size-limit")
 
-    console.log(`Default configured filesizelimit is set to ${fsl} bytes...`)
+    console.log(`Configured file size limit is set to ${fsl} bytes...`)
     console.log(`Name of Repository is ${repo} and the owner is ${owner}`)
     console.log(`Triggered event is ${event_type}`)
 
@@ -265,6 +276,26 @@ function validateDirectory(file: string){
     let slash = file.indexOf('/');
 
     if (slash <= 0) {
+      core.warning(file);
+      core.error('Root level file changes must be approved.');
+    } else {
+      let dir = file.substring(0, slash);
+      if (!existingDirs.includes(dir))
+      {
+        core.warning(file);
+        newRootDirs.indexOf(dir) === -1 ? newRootDirs.push(dir) : core.debug(`${dir} already exists in new root dir array.`);
+      }
+    }
+}
+
+// Ensure that all files found in the PR are not in a new top level directory or at the root themselves
+function validateDirectory2(files: string[]) : string[]{
+  let foundNew : string[] = [];
+
+  for (let file of files) {
+    let slash = file.indexOf('/');
+    if (slash <= 0) {
+        // Found new root level file
         core.warning(file);
         core.error('Root level file changes must be approved.');
     } else {
@@ -272,10 +303,12 @@ function validateDirectory(file: string){
         if (!existingDirs.includes(dir))
         {
             core.warning(file);
-            newRootDirs.indexOf(dir) === -1 ? newRootDirs.push(dir) : core.debug(`${dir} already exists in new root dir array.`);
-            //core.error(`New root level directory '${dir}' must be approved`);
+            // Only add newly found directories once
+            newRootDirs.indexOf(dir) === -1 ? foundNew.push(dir) : core.debug(`${dir} already exists in new root dir array.`);
         }
     }
+  }
+  return foundNew;
 }
 
 function validateFile(file: string) {
