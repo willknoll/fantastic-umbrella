@@ -30354,7 +30354,7 @@ function run() {
                     else {
                         console.warn("Detected large files:");
                     }
-                    for (const largeFile in lfsFile) {
+                    for (let largeFile of lfsFile) {
                         console.log(`  ${largeFile}`);
                     }
                     //console.log(lfsFile)
