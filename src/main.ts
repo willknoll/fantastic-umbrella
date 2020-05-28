@@ -99,7 +99,7 @@ async function run() {
 
     // Check file sizes
     console.log("Validating file sizes...");
-    validateFileSizes(client, owner, repo, prNumber, fileSizeLimit);
+    await validateFileSizes(client, owner, repo, prNumber, fileSizeLimit);
 
     // Get list of all files changed in the PR
     core.info(`Fetching changed files for pr #${prNumber}`);
