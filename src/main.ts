@@ -7,8 +7,8 @@ const fileNameRegex = "^[a-z\-\d]+.{1}[a-z]{1,4}$";
 const regexFileName = new RegExp(fileNameRegex);
 const allowedExtensions = ['md', 'yml', 'jpg', 'png'];
 const fileNameExceptions = ['README.md'];
-const labelLargeFile = "lf-detected";
-const labelRootDir = "new-root-dir";
+const labelLargeFile = "large-file";
+const labelRootDir = "new-root-item";
 const labelFileName = "invalid-file-name";
 //TODO: Can we pull this list from the existing repo files instead?
 const existingDirs = [
@@ -120,27 +120,16 @@ async function run() {
         validateFile(file);
     }
 
-
-
     if (isError)
     {
         core.setFailed("Found one or more file errors.");
         // double-check that there are labels to add
         console.log(`Labels to add: ${labels}`);
         if (labels.length > 0) {
-          await client.issues.addLabels({
-            owner,
-            repo,
-            issue_number: prNumber,
-            labels
-          });
+          addLabels(client, prNumber, labels);
         }
     }
 
-      // TODO:
-      // git lfs attributes misconfiguration aka missing installation on client while git-lfs is configured on repo upstream
-
-               
    /*
     const labelGlobs: Map<string, string[]> = await getLabelGlobs(
       client,
@@ -429,8 +418,8 @@ async function getLargeFileLabel(client: github.GitHub, owner: string, repo: str
           owner,
           repo,
           name: labelLargeFile,
-          color: "ff1493",
-          description: "Warning Label for use when a large file is detected in the commits of a Pull Request"
+          color: "991222",
+          description: "Large file is detected in a PR"
         })
         console.log(`No large file warning label detected. Creating new label ...`)
         console.log(`Large file warning label created`)
@@ -458,8 +447,8 @@ async function getInvalidFileLabel(client: github.GitHub, owner: string, repo: s
         owner,
         repo,
         name: labelFileName,
-        color: "ff1493",
-        description: "Warning Label for use when an invalid file name is detected in the commits of a Pull Request"
+        color: "991222",
+        description: "Invalid file name is detected in a PR"
       })
       console.log(`No invalid file name warning label detected. Creating new label ...`)
       console.log(`Invalid file name warning label created`)
@@ -487,8 +476,8 @@ async function getNewRootItemLabel(client: github.GitHub, owner: string, repo: s
           owner,
           repo,
           name: labelRootDir,
-          color: "ff1493",
-          description: "Warning Label for use when a new root item is detected in the commits of a Pull Request"
+          color: "991222",
+          description: "New root item is detected in a PR"
         })
         console.log(`No new root item warning label detected. Creating new label ...`)
         console.log(`New root item warning label created`)
