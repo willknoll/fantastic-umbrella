@@ -30340,7 +30340,7 @@ function run() {
                         return newPRobj;
                     });
                 }));
-                console.log(prFilesWithBlobSize);
+                console.debug(prFilesWithBlobSize);
                 let lfsFile = [];
                 for (let prop in prFilesWithBlobSize) {
                     if (prFilesWithBlobSize[prop].fileblobsize > fsl) {
@@ -30358,7 +30358,7 @@ function run() {
                         console.log(`  ${largeFile}`);
                     }
                     //console.log(lfsFile)
-                    let lfsFileNames = lfsFile.join(", ");
+                    let lfsFileNames = lfsFile.join(`\n`);
                     let bodyTemplateSingle = `## :warning: Possible large file detected :warning: \n
         The following file exceeds the file size limit of ${fsl} bytes:
         ${lfsFileNames.toString()}
