@@ -154,7 +154,7 @@ async function run() {
             })
           )
       
-      console.debug(prFilesWithBlobSize)
+      core.debug(prFilesWithBlobSize.toString())
 
       let lfsFile : string[] = [];
       for (let prop in prFilesWithBlobSize) {
@@ -165,9 +165,9 @@ async function run() {
 
       if (lfsFile.length > 0) {
         if (lfsFile.length === 1) {
-          console.warn("Detected large file:")
+          core.warning("Detected large file:")
         } else {
-          console.warn("Detected large files:")
+          core.warning("Detected large files:")
         }
 
         for (let largeFile of lfsFile) {
