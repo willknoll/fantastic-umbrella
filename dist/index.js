@@ -30471,7 +30471,7 @@ function validateDirectory2(files) {
             if (!existingDirs.includes(dir)) {
                 core.warning(file);
                 // Only add newly found directories once
-                newRootDirs.indexOf(dir) === -1 ? foundNew.push(dir) : core.debug(`${dir} already exists in new root dir array.`);
+                foundNew.indexOf(dir) === -1 ? foundNew.push(dir) : core.debug(`${dir} already exists in new root dir array.`);
             }
         }
     }
