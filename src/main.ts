@@ -44,6 +44,7 @@ const existingDirs = [
     'useful-urls',
     'working-with-the-field'
 ];
+let newRootDirs : string[] = [];
 var isError = false;
 
 async function run() {
@@ -80,6 +81,11 @@ async function run() {
     for (const file of changedFiles)
     {
         validateDirectory(file);
+    }
+
+    for (let newDir of newRootDirs)
+    {
+        core.error(`New root level directory '${newDir}' must be approved`);
     }
 
     console.log("Validating files...");
@@ -266,7 +272,8 @@ function validateDirectory(file: string){
         if (!existingDirs.includes(dir))
         {
             core.warning(file);
-            core.error(`New root level directory '${dir}' must be approved`);
+            newRootDirs.push(dir);
+            //core.error(`New root level directory '${dir}' must be approved`);
         }
     }
 }

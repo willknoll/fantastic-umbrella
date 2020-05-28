@@ -30250,6 +30250,7 @@ const existingDirs = [
     'useful-urls',
     'working-with-the-field'
 ];
+let newRootDirs = [];
 var isError = false;
 function run() {
     return __awaiter(this, void 0, void 0, function* () {
@@ -30277,6 +30278,9 @@ function run() {
             console.log("Inspecting directories...");
             for (const file of changedFiles) {
                 validateDirectory(file);
+            }
+            for (let newDir of newRootDirs) {
+                core.error(`New root level directory '${newDir}' must be approved`);
             }
             console.log("Validating files...");
             for (const file of changedFiles) {
@@ -30437,7 +30441,8 @@ function validateDirectory(file) {
         let dir = file.substring(0, slash);
         if (!existingDirs.includes(dir)) {
             core.warning(file);
-            core.error(`New root level directory '${dir}' must be approved`);
+            newRootDirs.push(dir);
+            //core.error(`New root level directory '${dir}' must be approved`);
         }
     }
 }
