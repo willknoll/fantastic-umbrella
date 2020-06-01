@@ -6,7 +6,7 @@ It considers the following items:
 - Ensures all file names conform to naming convention
 - Ensures no disallowed file types are included in the PR
 - Ensures no files exceed 1 MB
-- Hilights any changes to root level files or folders
+- Highlights any changes to root level files or folders
 
 ## Making Changes
 
