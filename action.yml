@@ -7,14 +7,14 @@ inputs:
   repo-token:
     description: 'The GITHUB_TOKEN secret'
     required: true
-  configuration-path:
-    description: 'The path for configurations'
-    required: true
-    default: '.github/labeler.yml'
   file-size-limit:
     description: 'Maximum file size in bytes'
     required: true
     default: '1048576' # Default 1MB
+  configuration-path:
+    description: 'The path for configurations'
+    required: true
+    default: '.github/labeler.yml'
 outputs:
   time: # id of output
     description: 'The time the step ran'
