@@ -38,10 +38,10 @@ to compile all of the necessary scripting into a single file, `index.js`:
 
 ## Required Action Inputs
 
-**repo-token**
+**repo-token**  
 The GITHUB_TOKEN secret. This value is set and retrieved automatically, the reference just needs to be included.
 
-**file-size-limit**:**
+**file-size-limit**  
 Maximum file size in bytes. Default is 1 MB.
 
 ## Example usage
